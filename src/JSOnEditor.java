@@ -20,11 +20,11 @@ public class JSOnEditor {
 
         newJson.append(newStudent(amountOfStudents(json) + 1, student));
         int continueInd;
-        if (json.indexOf("{", inputIndex + 1) - 2 > 0){
-            continueInd = json.indexOf("{", inputIndex + 1) - 2;
+        if (json.indexOf("\t\t{", inputIndex) > 0){
+            continueInd = json.indexOf("\t\t{", inputIndex);
         }
         else {
-            continueInd = json.indexOf("]", inputIndex + 1) - 1;
+            continueInd = json.indexOf("\t]", inputIndex);
         }
 
         for (int i = continueInd; i < json.length(); i++) {
@@ -37,12 +37,14 @@ public class JSOnEditor {
     public int whereToAdd(String json, String student){
         int jsEnd = json.indexOf("]");
         StringBuilder nextName = new StringBuilder();
-        if(json.indexOf("\t{") - 2 < 0){
+        //if there are no students in json
+        if(!json.contains("\t\t{")){
             return json.indexOf("[") + 2;
         }
-        int inputIndex = json.indexOf("\t{") - 2 ;
+        int inputIndex = json.indexOf("\n\t\t{");
         while(inputIndex < jsEnd){
             int nextNameBegin =  json.indexOf("\"name\": ", inputIndex) + 9;
+            //if there are no more names after inputIndex
             if(nextNameBegin < inputIndex){
                 return inputIndex;
             } else{
@@ -55,6 +57,7 @@ public class JSOnEditor {
                     return inputIndex;
                 }
                 else{
+                    //if there are some names after input index
                     if(json.indexOf("\t{", inputIndex) > 0) {
                         inputIndex = json.indexOf("\t}", inputIndex) + 2;
                     } else {
