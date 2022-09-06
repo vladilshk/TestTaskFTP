@@ -4,10 +4,8 @@ import java.util.TreeSet;
 
 public class JSOnEditor {
 
-    private Set<String> students = new TreeSet<>();
-    public JSOnEditor(){
-    }
-    public String createJson() {
+    private static Set<String> students = new TreeSet<>();
+    public static String createJson() {
         StringBuilder json = new StringBuilder();
         json.append("{\n");
         json.append("\tstudents: [\n");
@@ -20,7 +18,7 @@ public class JSOnEditor {
 
     //this method receives a string with a json file as input
     // and returns a string with a list of students
-    public String studentsToString(String json){
+    public static String studentsToString(String json){
         getNamesFromJson(json);
         StringBuilder names = new StringBuilder();
         Iterator iterator = students.iterator();
@@ -31,7 +29,7 @@ public class JSOnEditor {
         return names.toString();
     }
 
-    public String getStudentById(String json, int id){
+    public  static String getStudentById(String json, int id){
         getNamesFromJson(json);
         int idx = 0;
         String student = null;
@@ -47,12 +45,12 @@ public class JSOnEditor {
         return student;
     }
 
-    public String addStudent(String json,String student) {
+    public static String addStudent(String json,String student) {
         getNamesFromJson(json);
         students.add(student);
         return jsonFromString(students);
     }
-    public String deleteStudent(String json, int id) {
+    public static String deleteStudent(String json, int id) {
         getNamesFromJson(json);
         if(id - 1 > students.size()){
             System.out.println("Error, there is no students with such id");
@@ -70,7 +68,7 @@ public class JSOnEditor {
         return jsonFromString(students);
     }
 
-    private String jsonFromString(Set<String> students){
+    private static String jsonFromString(Set<String> students){
         int id = 1;
         StringBuilder json = new StringBuilder();
         json.append("{\n");
@@ -93,7 +91,7 @@ public class JSOnEditor {
         json.append("}\n");
         return json.toString();
     }
-    private void getNamesFromJson(String json){
+    private static void getNamesFromJson(String json){
         Set<String> names = new TreeSet<>();
         int idx = 0;
         while((idx = json.indexOf("\"name\": ", idx + 1)) > 0){

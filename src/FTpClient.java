@@ -4,10 +4,11 @@ import java.util.StringTokenizer;
 
 public class FTpClient {
     private Socket clientSocket = null;
-
     private BufferedReader reader = null;
-
     private BufferedWriter writer = null;
+
+    private JSOnEditor js = null;
+
 
     public synchronized void connect(String host, int port, String user,
                                      String pass) throws IOException {
@@ -103,7 +104,7 @@ public class FTpClient {
         readCommand();
     }
 
-    public void receiveData() throws IOException {
+    public String receiveData() throws IOException {
         sendCommand("PASV");
         String response = readCommand();
         if (!response.startsWith("227 ")) {
@@ -136,11 +137,11 @@ public class FTpClient {
         buffer = inputStream.readAllBytes();
 
         String massage = new String(buffer);
-        System.out.println(massage);
         inputStream.close();
 
         readCommand();
         readCommand();
+        return massage;
     }
 
     public synchronized boolean bin() throws IOException {
@@ -160,7 +161,7 @@ public class FTpClient {
             throw new IOException("Error: you are not connected");
         }
         try {
-            writer.write(line + "\r\n");
+            writer.write(line + "\r\n"); //for linux \n for windows \r\n
             writer.flush();
         } catch (IOException e) {
             clientSocket = null;
@@ -174,23 +175,21 @@ public class FTpClient {
         return line;
     }
 
-    /*public String createJSON(){
-        JSOnEditor js = new JSOnEditor();
+    public void workSpase() throws IOException {
+        connect("127.0.0.1", 21, "Vovai", "23343");
+        cwd("books");
+        bin();
+        String str;
+        str = receiveData();
+        str = JSOnEditor.addStudent(str, "Vovai");
+        str = JSOnEditor.addStudent(str, "Tomas");
+        str = JSOnEditor.addStudent(str, "dan");
+        str = JSOnEditor.addStudent(str, "Luca");
+        str = JSOnEditor.addStudent(str, "AAAA");
+        sendData(str);
+        //receiveData();
+        disconnect();
+    }
 
-        //return js.addStudent(js.createJson(), "Voldi");
-        String str = js.createJson();
-       str = js.addStudent(str, "cccvovan");
-        str = js.addStudent(str, "dddnastia");
-       str = js.addStudent(str, "hhhuila");
-        str = js.addStudent(str, "bpppidor");
-        str = js.addStudent(str, "aaasosiChlen");
-        System.out.println(js.getAllStudents(str));
-        //str = js.deleteStudent(str, 1);
-        //str = js.deleteStudent(str, 3);
-        //str = js.deleteStudent(str, 4);
-        //str = js.deleteStudent(str, 5);
 
-
-        return str;
-    }*/
 }
