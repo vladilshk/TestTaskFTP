@@ -1,8 +1,12 @@
 import java.io.*;
+import java.lang.invoke.SwitchPoint;
 import java.net.Socket;
+import java.util.Scanner;
 import java.util.StringTokenizer;
 
 public class FTpClient {
+
+    private boolean isConnected = false;
     private Socket clientSocket = null;
     private BufferedReader reader = null;
     private BufferedWriter writer = null;
@@ -10,15 +14,15 @@ public class FTpClient {
     private JSOnEditor js = null;
 
 
-    public synchronized void connect(String host, int port, String user,
-                                     String pass) throws IOException {
+    public synchronized void connect() throws IOException {
+        String[] conDate =  getDateForConnection();
+        System.out.println("Trying to connect...");
         if (clientSocket != null) {
             throw new IOException("Error: You hava already connected");
         }
-        clientSocket = new Socket(host, port);
+        clientSocket = new Socket(conDate[2], 21);
         reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-        writer = new BufferedWriter(
-                new OutputStreamWriter(clientSocket.getOutputStream()));
+        writer = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
 
         /*String response = readLine();
         if (!response.startsWith("220 ")) {
@@ -31,12 +35,12 @@ public class FTpClient {
             response = readCommand();
             if (!response.startsWith("220")) {
                 throw new IOException(
-                        "SimpleFTP received an unknown response when connecting to the FTP server: "
+                        "Error: received an unknown response when connecting to the FTP server: "
                                 + response);
             }
         }
 
-        sendCommand("USER " + user);
+        sendCommand("USER " + conDate[0]);
 
         response = readCommand();
         if (!response.startsWith("331 ")) {
@@ -45,7 +49,7 @@ public class FTpClient {
                             + response);
         }
 
-        sendCommand("PASS " + pass);
+        sendCommand("PASS " + conDate[1]);
 
         response = readCommand();
         if (!response.startsWith("230 ")) {
@@ -54,6 +58,8 @@ public class FTpClient {
                             + response);
         }
 
+        isConnected = true;
+        System.out.println("You have successfully connected");
         // Now logged in.
     }
 
@@ -66,33 +72,8 @@ public class FTpClient {
     }
 
     public void sendData(String massage) throws IOException {
-        sendCommand("PASV");
-        String response = readCommand();
-        if (!response.startsWith("227 ")) {
-            throw new IOException("SimpleFTP could not request passive mode: "
-                    + response);
-        }
-
-        String ip = null;
-        int port = -1;
-        int opening = response.indexOf('(');
-        int closing = response.indexOf(')', opening + 1);
-        if (closing > 0) {
-            String dataLink = response.substring(opening + 1, closing);
-            StringTokenizer tokenizer = new StringTokenizer(dataLink, ",");
-            try {
-                ip = tokenizer.nextToken() + "." + tokenizer.nextToken() + "."
-                        + tokenizer.nextToken() + "." + tokenizer.nextToken();
-                port = Integer.parseInt(tokenizer.nextToken()) * 256
-                        + Integer.parseInt(tokenizer.nextToken());
-            } catch (Exception e) {
-                throw new IOException("SimpleFTP received bad data link information: "
-                        + response);
-            }
-        }
-
+        Socket dataSocket = PASV();
         sendCommand("STOR " + "students.txt");
-        Socket dataSocket = new Socket(ip, port);
         BufferedOutputStream output = new BufferedOutputStream(dataSocket.getOutputStream());
         byte[] buffer = new byte[1024];
         buffer = massage.getBytes();
@@ -105,6 +86,22 @@ public class FTpClient {
     }
 
     public String receiveData() throws IOException {
+        Socket dataSocket = PASV();
+        sendCommand("RETR " + "students.txt");
+        BufferedInputStream inputStream = new BufferedInputStream(dataSocket.getInputStream());
+        byte[] buffer = new byte[1024];
+        buffer = inputStream.readAllBytes();
+
+        String massage = new String(buffer);
+        inputStream.close();
+
+        readCommand();
+        readCommand();
+        return massage;
+    }
+
+    //turning on a passive mode
+    public Socket PASV() throws IOException {
         sendCommand("PASV");
         String response = readCommand();
         if (!response.startsWith("227 ")) {
@@ -130,18 +127,9 @@ public class FTpClient {
             }
         }
 
-        sendCommand("RETR " + "students.txt");
-        Socket dataSocket = new Socket(ip, port);
-        BufferedInputStream inputStream = new BufferedInputStream(dataSocket.getInputStream());
-        byte[] buffer = new byte[1024];
-        buffer = inputStream.readAllBytes();
 
-        String massage = new String(buffer);
-        inputStream.close();
+         return new Socket(ip, port);
 
-        readCommand();
-        readCommand();
-        return massage;
     }
 
     public synchronized boolean bin() throws IOException {
@@ -176,20 +164,80 @@ public class FTpClient {
     }
 
     public void workSpase() throws IOException {
-        connect("127.0.0.1", 21, "Vovai", "23343");
+        //connect("127.0.0.1", 21, "Vovai", "23343");
+        connect();
         cwd("books");
         bin();
-        String str;
-        str = receiveData();
-        str = JSOnEditor.addStudent(str, "Vovai");
-        str = JSOnEditor.addStudent(str, "Tomas");
-        str = JSOnEditor.addStudent(str, "dan");
-        str = JSOnEditor.addStudent(str, "Luca");
-        str = JSOnEditor.addStudent(str, "AAAA");
-        sendData(str);
-        //receiveData();
+        while (isConnected){
+            System.out.println("Input a command:");
+            Scanner scanner = new Scanner(System.in);
+            int num = scanner.nextInt();
+            switch(num){
+                case 1:{
+                    getStudentsList();
+                    break;
+                }
+                case 2:{
+                    getStudentByID();
+                    break;
+                }
+                case 3:{
+                    addStudent();
+                    break;
+                }
+                case 4:{
+                    deleteStudent();
+                    break;
+                }
+                case 5:{
+                    isConnected = false;
+                    break;
+                }
+                default:{
+                    System.out.println("Error: you tried to input wrong command");
+                    break;
+                }
+            }
+        }
+
         disconnect();
     }
 
+    public void addStudent() throws IOException {
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Input name of a new student:");
+        String newStudent = scanner.nextLine();
+        sendData(JSOnEditor.addStudent(receiveData(), newStudent));
+    }
+
+    public void deleteStudent() throws IOException {
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Input id of student you want to delete");
+        int studentForDelete = scanner.nextInt();
+        sendData(JSOnEditor.deleteStudent(receiveData(), studentForDelete));
+    }
+    public void getStudentsList() throws IOException {
+        System.out.println("Students:\n" + JSOnEditor.studentsToString(receiveData()));
+    }
+
+    public void getStudentByID() throws IOException {
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Input id of student to see his/her name: ");
+        int student = scanner.nextInt();
+        System.out.println(JSOnEditor.getStudentById(receiveData(), student));
+    }
+
+    public String[] getDateForConnection(){
+        String[] connectInfo = new String[3];
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Input your username: ");
+        connectInfo[0] = scanner.nextLine();
+        System.out.print("Input your password: ");
+        connectInfo[1] = scanner.nextLine();
+        System.out.print("Input server IP: ");
+        connectInfo[2] = scanner.nextLine();
+
+        return connectInfo;
+    }
 
 }
