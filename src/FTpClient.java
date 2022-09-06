@@ -174,7 +174,7 @@ public class FTpClient {
         return line;
     }
 
-    public String createJSON(){
+    /*public String createJSON(){
         JSOnEditor js = new JSOnEditor();
 
         //return js.addStudent(js.createJson(), "Voldi");
@@ -184,6 +184,7 @@ public class FTpClient {
        str = js.addStudent(str, "hhhuila");
         str = js.addStudent(str, "bpppidor");
         str = js.addStudent(str, "aaasosiChlen");
+        System.out.println(js.getAllStudents(str));
         //str = js.deleteStudent(str, 1);
         //str = js.deleteStudent(str, 3);
         //str = js.deleteStudent(str, 4);
@@ -191,5 +192,5 @@ public class FTpClient {
 
 
         return str;
-    }
+    }*/
 }

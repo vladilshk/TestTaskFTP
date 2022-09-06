@@ -6,7 +6,7 @@ public class TestClientSocket {
         ftpClient.connect("127.0.0.1", 21, "Vovai", "23343");
         ftpClient.cwd("books");
         ftpClient.bin();
-        ftpClient.sendData(ftpClient.createJSON());
+        //ftpClient.sendData(ftpClient.createJSON());
         ftpClient.receiveData();
         ftpClient.disconnect();
 

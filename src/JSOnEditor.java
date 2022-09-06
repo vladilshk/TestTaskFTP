@@ -1,4 +1,12 @@
+import java.util.Iterator;
+import java.util.Set;
+import java.util.TreeSet;
+
 public class JSOnEditor {
+
+    private Set<String> students = new TreeSet<>();
+    public JSOnEditor(){
+    }
     public String createJson() {
         StringBuilder json = new StringBuilder();
         json.append("{\n");
@@ -10,125 +18,92 @@ public class JSOnEditor {
         return json.toString();
     }
 
-    public String addStudent(String json, String student) {
-        StringBuilder newJson = new StringBuilder();
-        int jsEnd = json.indexOf("]");
-        int inputIndex = whereToAdd(json, student);
-        for (int i = 0; i < inputIndex - 1; i++) {
-            newJson.append(json.charAt(i));
+    //this method receives a string with a json file as input
+    // and returns a string with a list of students
+    public String studentsToString(String json){
+        getNamesFromJson(json);
+        StringBuilder names = new StringBuilder();
+        Iterator iterator = students.iterator();
+        while (iterator.hasNext()){
+            names.append(iterator.next());
+            names.append("\n");
         }
-
-        newJson.append(newStudent(amountOfStudents(json) + 1, student));
-        int continueInd;
-        if (json.indexOf("\t\t{", inputIndex) > 0){
-            continueInd = json.indexOf("\t\t{", inputIndex);
-        }
-        else {
-            continueInd = json.indexOf("\t]", inputIndex);
-        }
-
-        for (int i = continueInd; i < json.length(); i++) {
-            newJson.append(json.charAt(i));
-        }
-
-        return newJson.toString();
+        return names.toString();
     }
 
-    public int whereToAdd(String json, String student){
-        int jsEnd = json.indexOf("]");
-        StringBuilder nextName = new StringBuilder();
-        //if there are no students in json
-        if(!json.contains("\t\t{")){
-            return json.indexOf("[") + 2;
+    public String getStudentById(String json, int id){
+        getNamesFromJson(json);
+        int idx = 0;
+        String student = null;
+        Iterator<String> iterator = students.iterator();
+        while (iterator.hasNext()){
+            idx++;
+            if(idx == id){
+                student = iterator.next();
+                break;
+            }
+            iterator.next();
         }
-        int inputIndex = json.indexOf("\n\t\t{");
-        while(inputIndex < jsEnd){
-            int nextNameBegin =  json.indexOf("\"name\": ", inputIndex) + 9;
-            //if there are no more names after inputIndex
-            if(nextNameBegin < inputIndex){
-                return inputIndex;
-            } else{
-                int nextNameEnd = json.indexOf("\"", nextNameBegin);
-                int idx = 0;
-                for (int i = nextNameBegin; i < nextNameEnd; i++) {
-                    nextName.append(json.charAt(i));
-                }
-                if(student.compareTo(String.valueOf(nextName)) <= 0 ) {
-                    return inputIndex;
-                }
-                else{
-                    //if there are some names after input index
-                    if(json.indexOf("\t{", inputIndex) > 0) {
-                        inputIndex = json.indexOf("\t}", inputIndex) + 2;
-                    } else {
-                        return inputIndex;
-                    }
-                }
+        return student;
+    }
+
+    public String addStudent(String json,String student) {
+        getNamesFromJson(json);
+        students.add(student);
+        return jsonFromString(students);
+    }
+    public String deleteStudent(String json, int id) {
+        getNamesFromJson(json);
+        if(id - 1 > students.size()){
+            System.out.println("Error, there is no students with such id");
+        }
+        int idx = 0;
+        Iterator<String> iterator = students.iterator();
+        while (iterator.hasNext()){
+            iterator.next();
+            idx++;
+            if(idx == id){
+                iterator.remove();
+                break;
             }
         }
-        return inputIndex;
+        return jsonFromString(students);
     }
 
-    public String newStudent(int id, String name) {
-        StringBuilder student = new StringBuilder();
-        student.append("\n\t\t{\n");
-        student.append("\t\t\t\"id\": " + id + "\n");
-        student.append("\t\t\t\"name\": \"" + name + "\"\n");
-        student.append("\t\t}\n");
-        return student.toString();
-    }
+    private String jsonFromString(Set<String> students){
+        int id = 1;
+        StringBuilder json = new StringBuilder();
+        json.append("{\n");
+        json.append("\t\"students\": [\n");
 
-    public String deleteStudent(String json, int id) {
-        int studentBegin = json.indexOf("\"id\": " + id) - 7;
-        int studentEnd = json.indexOf("}", studentBegin + 7);
-        StringBuilder newJson = new StringBuilder();
-        for (int i = 0; i < studentBegin; i++) {
-            newJson.append(json.charAt(i));
+        Iterator<String> it = students.iterator();
+        while (it.hasNext()){
+            json.append("\t\t{\n");
+            json.append("\t\t\t\"id\": " + id + "\n");
+            json.append("\t\t\t\"name\": \"" + it.next() + "\"\n");
+            id++;
+            if(id - 1 == students.size()){
+                json.append("\t\t}\n");
+            }
+            else {
+                json.append("\t\t},\n");
+            }
         }
-        for (int i = studentEnd + 2; i < json.length(); i++) {
-            newJson.append(json.charAt(i));
+        json.append("\t]\n");
+        json.append("}\n");
+        return json.toString();
+    }
+    private void getNamesFromJson(String json){
+        Set<String> names = new TreeSet<>();
+        int idx = 0;
+        while((idx = json.indexOf("\"name\": ", idx + 1)) > 0){
+            StringBuilder name = new StringBuilder();
+            idx += 9;
+            while (json.charAt(idx) != '\"'){
+                name.append(json.charAt(idx++));
+            }
+            names.add(name.toString());
         }
-        return newJson.toString();
-    }
-
-    public void sortStudents(String json){
-
-    }
-
-    public int amountOfStudents(String json){
-        char c = '{';
-        return (int) json.chars().filter(x->x==c).count() - 1;
-    }
-
-    /*public static void compareStrings(String student1, String student2 {
-
-        int comparedResult = student1.compareTo(student2);
-
-        if (comparedResult > 0) {
-            System.out.println(student1 + " comes after " + student2);
-        } else if (comparedResult < 0) {
-            System.out.println(student1 + " comes before " + student2);
-        } else {
-            System.out.println(student1 + " is equal to " + student2);
-        }
-
-
-    }*/
-
-
-    public void smth() {
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("\t\t{\n");
-        stringBuilder.append("\t\t\t\"id\": 1\n");
-        stringBuilder.append("\t\t\t\"name\": \"Student1\"\n");
-        stringBuilder.append("\t\t},\n");
-        stringBuilder.append("\t\t{\n");
-        stringBuilder.append("\t\t\t\"id\": 2\n");
-        stringBuilder.append("\t\t\t\"name\": \"Student2\"\n");
-        stringBuilder.append("\t\t},\n");
-        stringBuilder.append("\t\t{\n");
-        stringBuilder.append("\t\t\t\"id\": 3\n");
-        stringBuilder.append("\t\t\t\"name\": \"Student3\"\n");
-        stringBuilder.append("\t\t}\n");
+        students = names;
     }
 }
