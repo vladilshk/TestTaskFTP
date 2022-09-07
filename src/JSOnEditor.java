@@ -1,107 +1,90 @@
-import java.util.Iterator;
-import java.util.Set;
-import java.util.TreeSet;
+
+
+import java.util.*;
 
 public class JSOnEditor {
-
-    private static Set<String> students = new TreeSet<>();
-    public static String createJson() {
-        StringBuilder json = new StringBuilder();
-        json.append("{\n");
-        json.append("\tstudents: [\n");
-
-        json.append("\t]\n");
-        json.append("}\n");
-
-        return json.toString();
-    }
-
     //this method receives a string with a json file as input
     // and returns a string with a list of students
     public static String studentsToString(String json){
-        getNamesFromJson(json);
+        Map<Integer,String> students = new LinkedHashMap<>(getNamesFromJs(json));
+        List<String> studentsList= new LinkedList<>();
+        for (int id : students.keySet()){
+            studentsList.add(students.get(id));
+        }
+        Collections.sort(studentsList);
         StringBuilder names = new StringBuilder();
-        Iterator iterator = students.iterator();
-        while (iterator.hasNext()){
-            names.append(iterator.next());
+        for (String name : studentsList){
+            names.append(name);
             names.append("\n");
         }
         return names.toString();
     }
 
     public  static String getStudentById(String json, int id){
-        getNamesFromJson(json);
-        int idx = 0;
-        String student = null;
-        Iterator<String> iterator = students.iterator();
-        while (iterator.hasNext()){
-            idx++;
-            if(idx == id){
-                student = iterator.next();
-                break;
-            }
-            iterator.next();
-        }
-        return student;
+        Map<Integer,String> students = new LinkedHashMap<>(getNamesFromJs(json));
+        return students.get(id);
     }
 
     public static String addStudent(String json,String student) {
-        getNamesFromJson(json);
-        students.add(student);
-        return jsonFromString(students);
+        Map<Integer,String> students = new LinkedHashMap<>(getNamesFromJs(json));
+        int lastId = 0;
+        for(int key: students.keySet()){
+            lastId = key;
+        }
+        students.put(lastId + 1, student);
+        return jsonFromMap(students);
     }
     public static String deleteStudent(String json, int id) {
-        getNamesFromJson(json);
-        if(id - 1 > students.size()){
-            System.out.println("Error, there is no students with such id");
+        Map<Integer,String> students = new LinkedHashMap<>(getNamesFromJs(json));
+        if(students.containsKey(id)){
+            students.remove(id);
+            return jsonFromMap(students);
         }
-        int idx = 0;
-        Iterator<String> iterator = students.iterator();
-        while (iterator.hasNext()){
-            iterator.next();
-            idx++;
-            if(idx == id){
-                iterator.remove();
-                break;
-            }
-        }
-        return jsonFromString(students);
+        return null;
     }
 
-    private static String jsonFromString(Set<String> students){
-        int id = 1;
+    private static String jsonFromMap(Map<Integer ,String> students){
+        //int id = 1;
         StringBuilder json = new StringBuilder();
         json.append("{\n");
         json.append("\t\"students\": [\n");
-
-        Iterator<String> it = students.iterator();
-        while (it.hasNext()){
+        int counter = 0;
+        for (int id: students.keySet()){
+            counter++;
             json.append("\t\t{\n");
             json.append("\t\t\t\"id\": " + id + "\n");
-            json.append("\t\t\t\"name\": \"" + it.next() + "\"\n");
+            json.append("\t\t\t\"name\": \"" + students.get(id) + "\"\n");
             id++;
-            if(id - 1 == students.size()){
-                json.append("\t\t}\n");
+            if(counter != students.size()){
+                json.append("\t\t},\n");
             }
             else {
-                json.append("\t\t},\n");
+                json.append("\t\t}\n");
             }
         }
         json.append("\t]\n");
         json.append("}\n");
         return json.toString();
     }
-    private static void getNamesFromJson(String json){
-        Set<String> names = new TreeSet<>();
+
+    private static Map<Integer, String> getNamesFromJs(String json){
+        Map<Integer, String > names = new LinkedHashMap<>();
         int idx = 0;
-        while((idx = json.indexOf("\"name\": ", idx + 1)) > 0){
+        while((idx = json.indexOf("\"id\": ", idx)) > 0){
+            StringBuilder id = new StringBuilder();
+            idx += 6;
+            while (json.charAt(idx) != '\n'){
+                id.append(json.charAt(idx++));
+            }
+
+            idx = json.indexOf("\"name\": ", idx);
             StringBuilder name = new StringBuilder();
             idx += 9;
             while (json.charAt(idx) != '\"'){
                 name.append(json.charAt(idx++));
             }
-            names.add(name.toString());
+            names.put(Integer.valueOf(id.toString()), name.toString());
         }
-        students = names;
+        return names;
     }
 }
