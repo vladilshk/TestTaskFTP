@@ -1,8 +1,6 @@
 import java.util.*;
 
 public class JSOnEditor {
-    //this method receives a string with a json file as input
-    // and returns a string with a list of students
     public static String studentsToString(String json){
         Map<Integer,String> students = new LinkedHashMap<>(getNamesFromJs(json));
         List<String> studentsList= new LinkedList<>();

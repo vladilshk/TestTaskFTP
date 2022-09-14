@@ -28,9 +28,8 @@ public class FTpClient {
         String[] conDate;
         //get server IP and connect to server
         while (true) {
-            //System.out.print("Input server IP: ");
-            //String serverIP = scanner.nextLine();
-            String serverIP = "localhost";
+            System.out.print("Input server IP: ");
+            String serverIP = scanner.nextLine();
             System.out.println("Trying to connect...");
             try {
                 clientSocket = new Socket(serverIP, 21);
@@ -49,9 +48,8 @@ public class FTpClient {
         }
 
         while (true) {
-            /*System.out.print("Input your username: ");
-            String username = scanner.nextLine();*/
-            String username = "ftpuser";
+            System.out.print("Input your username: ");
+            String username = scanner.nextLine();
             sendCommand("USER " + username);
 
             response = readCommand();
@@ -59,9 +57,8 @@ public class FTpClient {
                 System.out.println("Error: Wrong username");
             }
 
-            /*System.out.print("Input your password: ");
-            String password = scanner.nextLine();*/
-            String password = "23343";
+            System.out.print("Input your password: ");
+            String password = scanner.nextLine();
             sendCommand("PASS " + password);
 
             response = readCommand();
@@ -100,8 +97,8 @@ public class FTpClient {
         output.close();
         dataSocket.close();
 
-        //readCommand();
-        //readCommand();
+        readCommand();
+        readCommand();
     }
 
     public String receiveData() throws IOException {
@@ -115,7 +112,6 @@ public class FTpClient {
         BufferedInputStream inputStream = new BufferedInputStream(dataSocket.getInputStream());
         byte[] buffer = new byte[1024];
         inputStream.read(buffer);
-        //buffer = inputStream.readAllBytes();
 
         String massage = new String(buffer);
         inputStream.close();
@@ -142,11 +138,11 @@ public class FTpClient {
                 port = Integer.parseInt(tokenizer.nextToken()) * 256
                         + Integer.parseInt(tokenizer.nextToken());
             } catch (Exception e) {
-                throw new IOException("Error: received bad data link information: "
-                        + response);
+
             }
         }
         sendCommand(command);
+
 
         return new Socket(ip, port);
 
@@ -218,7 +214,6 @@ public class FTpClient {
 
     public void mainLoop() throws IOException {
         connect();
-        cwd("files");
         bin();
         chooseMode();
         startMenu();
@@ -258,9 +253,18 @@ public class FTpClient {
     }
 
     public void addStudent() throws IOException {
-        Scanner scanner = new Scanner(System.in);
+        String newStudent;
         System.out.println("Input name of a new student:");
-        String newStudent = scanner.nextLine();
+        while (true){
+            Scanner scanner = new Scanner(System.in);
+            newStudent = scanner.nextLine();
+            if(newStudent.indexOf('\"') >= 0){
+                System.out.println("Students name shouldn't contain '\"'");
+            }
+            else{
+                break;
+            }
+        }
         sendData(JSOnEditor.addStudent(receiveData(), newStudent));
     }
 
