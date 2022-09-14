@@ -22,7 +22,6 @@ public class FTpClient {
 
 
     public synchronized void connect() throws IOException {
-        System.out.println("Trying to connect...");
         Scanner scanner = new Scanner(System.in);
         String response;
         String[] conDate;
