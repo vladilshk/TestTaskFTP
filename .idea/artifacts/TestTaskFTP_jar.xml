@@ -1,8 +1,0 @@
-<component name="ArtifactManager">
-  <artifact type="jar" name="TestTaskFTP:jar">
-    <output-path>$PROJECT_DIR$/out/artifacts/TestTaskFTP_jar</output-path>
-    <root id="archive" name="TestTaskFTP.jar">
-      <element id="module-output" name="TestTaskFTP" />
-    </root>
-  </artifact>
-</component>
