@@ -1,8 +1,10 @@
 import java.io.*;
 import java.lang.invoke.SwitchPoint;
 import java.net.NoRouteToHostException;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
 import java.util.Scanner;
 import java.util.StringTokenizer;
 
@@ -15,6 +17,9 @@ public class FTpClient {
 
     private JSOnEditor js = null;
 
+    private boolean passiveMode = false;
+    private boolean activeMode = false;
+
 
     public synchronized void connect() throws IOException {
         System.out.println("Trying to connect...");
@@ -23,8 +28,9 @@ public class FTpClient {
         String[] conDate;
         //get server IP and connect to server
         while (true) {
-            System.out.print("Input server IP: ");
-            String serverIP = scanner.nextLine();
+            //System.out.print("Input server IP: ");
+            //String serverIP = scanner.nextLine();
+            String serverIP = "localhost";
             System.out.println("Trying to connect...");
             try {
                 clientSocket = new Socket(serverIP, 21);
@@ -42,9 +48,10 @@ public class FTpClient {
             }
         }
 
-        while(true) {
-            System.out.print("Input your username: ");
-            String username = scanner.nextLine();
+        while (true) {
+            /*System.out.print("Input your username: ");
+            String username = scanner.nextLine();*/
+            String username = "ftpuser";
             sendCommand("USER " + username);
 
             response = readCommand();
@@ -52,8 +59,9 @@ public class FTpClient {
                 System.out.println("Error: Wrong username");
             }
 
-            System.out.print("Input your password: ");
-            String password = scanner.nextLine();
+            /*System.out.print("Input your password: ");
+            String password = scanner.nextLine();*/
+            String password = "23343";
             sendCommand("PASS " + password);
 
             response = readCommand();
@@ -77,43 +85,50 @@ public class FTpClient {
     }
 
     public void sendData(String massage) throws IOException {
-        Socket dataSocket = PASV();
-        sendCommand("STOR " + "students");
+        Socket dataSocket;
+        if (activeMode) {
+            dataSocket = PORT("STOR students");
+        } else {
+            dataSocket = PASV("STOR students");
+        }
+
         BufferedOutputStream output = new BufferedOutputStream(dataSocket.getOutputStream());
         byte[] buffer = new byte[1024];
         buffer = massage.getBytes();
         output.write(buffer, 0, buffer.length);
         output.flush();
         output.close();
+        dataSocket.close();
 
-        readCommand();
-        readCommand();
+        //readCommand();
+        //readCommand();
     }
 
     public String receiveData() throws IOException {
-        Socket dataSocket = PASV();
-        sendCommand("RETR " + "students");
+        Socket dataSocket;
+        if (activeMode) {
+            dataSocket = PORT("RETR students");
+        } else {
+            dataSocket = PASV("RETR students");
+        }
+
         BufferedInputStream inputStream = new BufferedInputStream(dataSocket.getInputStream());
         byte[] buffer = new byte[1024];
-        buffer = inputStream.readAllBytes();
+        inputStream.read(buffer);
+        //buffer = inputStream.readAllBytes();
 
         String massage = new String(buffer);
         inputStream.close();
-
+        dataSocket.close();
         readCommand();
         readCommand();
         return massage;
     }
 
     //turning on a passive mode
-    public Socket PASV() throws IOException {
+    public Socket PASV(String command) throws IOException {
         sendCommand("PASV");
         String response = readCommand();
-        if (!response.startsWith("227 ")) {
-            throw new IOException("SimpleFTP could not request passive mode: "
-                    + response);
-        }
-
         String ip = null;
         int port = -1;
         int opening = response.indexOf('(');
@@ -127,26 +142,35 @@ public class FTpClient {
                 port = Integer.parseInt(tokenizer.nextToken()) * 256
                         + Integer.parseInt(tokenizer.nextToken());
             } catch (Exception e) {
-                throw new IOException("SimpleFTP received bad data link information: "
+                throw new IOException("Error: received bad data link information: "
                         + response);
             }
         }
-
+        sendCommand(command);
 
         return new Socket(ip, port);
 
     }
 
-    public synchronized boolean bin() throws IOException {
-        sendCommand("TYPE I");
+    public Socket PORT(String command) throws IOException {
+        //localhost, your port 50001
+        sendCommand("PORT 127,0,0,1,195,81");
         String response = readCommand();
-        return (response.startsWith("200 "));
+        ServerSocket connectionSocket = new ServerSocket(50001);
+        sendCommand(command);
+        Socket dataSocket = connectionSocket.accept();
+        connectionSocket.close();
+        return dataSocket;
     }
 
-    public synchronized boolean cwd(String dir) throws IOException {
+    public void bin() throws IOException {
+        sendCommand("TYPE I");
+        String response = readCommand();
+    }
+
+    public void cwd(String dir) throws IOException {
         sendCommand("CWD " + dir);
         String response = readCommand();
-        return (response.startsWith("250 "));
     }
 
     private void sendCommand(String line) throws IOException {
@@ -168,11 +192,36 @@ public class FTpClient {
         return line;
     }
 
-    public void workSpase() throws IOException {
+    private void chooseMode() {
+
+        System.out.println("For using passive mode type \"0\", for active \"1\"");
+        while (true) {
+            Scanner scanner = new Scanner(System.in);
+            try {
+                int mode = scanner.nextInt();
+                if (mode == 0) {
+                    passiveMode = true;
+                    System.out.println("Now you use passive mode.");
+                    break;
+                } else if (mode == 1) {
+                    activeMode = true;
+                    System.out.println("Now you use active mode.");
+                    break;
+                } else {
+                    System.out.println("Wrong input. Try again");
+                }
+            } catch (Exception e) {
+                System.out.println("Wrong input. Try again");
+            }
+        }
+    }
+
+    public void mainLoop() throws IOException {
         connect();
         cwd("files");
         bin();
-        /*startMenu();*/
+        chooseMode();
+        startMenu();
         while (isConnected) {
             System.out.println("Input a command:");
             Scanner scanner = new Scanner(System.in);
@@ -219,10 +268,9 @@ public class FTpClient {
         System.out.print("Input id of student you want to delete: ");
         int studentForDelete = getIntFromUser("Error: Id could be only integer. Please try again.");
         String json = JSOnEditor.deleteStudent(receiveData(), studentForDelete);
-        if(json == null){
+        if (json == null) {
             System.out.println("There is no student with ID " + studentForDelete);
-        }
-        else {
+        } else {
             sendData(json);
         }
 
@@ -230,10 +278,9 @@ public class FTpClient {
 
     public void getStudentsList() throws IOException {
         String studentsList = JSOnEditor.studentsToString(receiveData());
-        if(studentsList.length() == 0){
+        if (studentsList.length() == 0) {
             System.out.println("There are no any student in list");
-        }
-        else{
+        } else {
             System.out.println("Students:\n" + studentsList);
         }
     }
@@ -243,7 +290,7 @@ public class FTpClient {
         System.out.print("Input id of student to see his/her name: ");
         int student = getIntFromUser("Error: Id could be only integer. Please try again.");
         String studentName = JSOnEditor.getStudentById(receiveData(), student);
-        if(studentName == null){
+        if (studentName == null) {
             System.out.println("There is no student with ID " + student);
         } else {
             System.out.println("Student: " + studentName);
@@ -275,5 +322,4 @@ public class FTpClient {
         System.out.println("5. Quit");
 
     }
-
 }
